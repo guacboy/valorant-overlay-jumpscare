@@ -22,16 +22,16 @@ def test_repo_config_is_valid():
 
 
 def test_partial_override_keeps_nested_defaults(tmp_path):
-    cfg = load_config(write(tmp_path, {"hotkeys": {"test_cue": "f9"}, "cue_volume": 0.5}))
-    assert cfg.hotkeys.test_cue == "f9"
+    cfg = load_config(write(tmp_path, {"hotkeys": {"test_sound": "f9"}, "sound_volume": 0.5}))
+    assert cfg.hotkeys.test_sound == "f9"
     assert cfg.hotkeys.test_jumpscare == "ctrl+alt+j"
-    assert cfg.cue_volume == 0.5
+    assert cfg.sound_volume == 0.5
 
 
 def test_absolute_folder_kept(tmp_path):
     target = tmp_path / "elsewhere"
-    cfg = load_config(write(tmp_path, {"cue_folder": str(target)}))
-    assert cfg.cue_folder == target
+    cfg = load_config(write(tmp_path, {"sound_folder": str(target)}))
+    assert cfg.sound_folder == target
 
 
 @pytest.mark.parametrize(
@@ -41,7 +41,7 @@ def test_absolute_folder_kept(tmp_path):
         {"hotkeys": {"bogus": "f1"}},
         {"hotkeys": "f1"},
         {"jumpscare_interval_seconds": {"min": 10, "max": 5}},
-        {"cue_interval_seconds": {"min": 0, "max": 5}},
+        {"sound_interval_seconds": {"min": 0, "max": 5}},
         {"jumpscare_volume": 1.5},
         {"jumpscare_scale": 0},
         {"jumpscare_duration_ms": 0},

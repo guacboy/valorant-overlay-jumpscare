@@ -1,4 +1,4 @@
-"""Keeps jumpscares and audio cues from overlapping."""
+"""Keeps jumpscares and sounds from overlapping."""
 
 import time
 from typing import Callable

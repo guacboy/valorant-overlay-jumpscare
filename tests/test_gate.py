@@ -60,7 +60,7 @@ def test_release_without_visual_is_noop():
     assert gate.wait_s() == 6.0
 
 
-def test_cue_waits_for_jumpscare_and_gap(qt_app, tmp_path):
+def test_sound_waits_for_jumpscare_and_gap(qt_app, tmp_path):
     folder = tmp_path / "assets" / "jumpscares"
     folder.mkdir(parents=True)
     pixmap = QPixmap(10, 10)
@@ -72,12 +72,12 @@ def test_cue_waits_for_jumpscare_and_gap(qt_app, tmp_path):
         encoding="utf-8",
     )
     app = OverlayApp(qt_app, load_config(cfg_path))
-    cue_timer: QTimer = app._cue_timer
+    sound_timer: QTimer = app._sound_timer
     try:
         app.trigger_jumpscare()
-        app._on_cue_timer()
-        assert cue_timer.isActive(), "cue should be deferred while the jumpscare is on screen"
-        assert cue_timer.remainingTime() <= 250
+        app._on_sound_timer()
+        assert sound_timer.isActive(), "sound should be deferred while the jumpscare is on screen"
+        assert sound_timer.remainingTime() <= 250
 
         QTest.qWait(200)  # image gone, gap still running
         assert not app._overlay.isVisible()
@@ -86,7 +86,7 @@ def test_cue_waits_for_jumpscare_and_gap(qt_app, tmp_path):
         QTest.qWait(400)
         assert app._gate.wait_s() == 0
     finally:
-        cue_timer.stop()
+        sound_timer.stop()
         app._scare_timer.stop()
         app._audio.shutdown()
 
@@ -97,14 +97,14 @@ def test_longest_waiting_event_goes_first(qt_app, tmp_path):
     app = OverlayApp(qt_app, load_config(cfg_path))
     try:
         app._gate.occupy(0.1)
-        app._on_cue_timer()  # cue starts waiting first
-        assert app._cue_timer.isActive()
+        app._on_sound_timer()  # sound starts waiting first
+        assert app._sound_timer.isActive()
 
-        time.sleep(0.4)  # gate frees up; no event processing, so the cue's timer stays pending
+        time.sleep(0.4)  # gate frees up; no event processing, so the sound's timer stays pending
         assert app._gate.wait_s() == 0
         app._on_scare_timer()
-        assert "Jumpscare" in app._waiting, "jumpscare must not cut in line ahead of the cue"
+        assert "Jumpscare" in app._waiting, "jumpscare must not cut in line ahead of the sound"
     finally:
-        app._cue_timer.stop()
+        app._sound_timer.stop()
         app._scare_timer.stop()
         app._audio.shutdown()

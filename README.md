@@ -1,6 +1,6 @@
 # Valorant Overlay Jumpscare
 
-A transparent, click-through overlay that flashes a random image, GIF or video over your screen at random intervals while you play, with optional audio. It can also play random audio cues on a separate timer.
+A transparent, click-through overlay that flashes a random image, GIF or video over your screen at random intervals while you play, with optional audio. It can also play random sounds on a separate timer.
 
 It is a normal always-on-top desktop window. It does not read game memory, inject into the game, or touch Valorant files.
 
@@ -28,7 +28,7 @@ On macOS or Linux the activate script is at `.venv/bin/activate` instead. The la
 | Folder | Contents |
 | --- | --- |
 | `assets/jumpscares/` | Images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`) and videos (`.mp4`, `.webm`, `.mov`, `.mkv`, `.avi`) |
-| `assets/cues/` | Audio cues played on their own timer |
+| `assets/sounds/` | Sounds (`.wav`, `.ogg`, `.mp3`) played on their own timer |
 
 Every jumpscare fills the whole screen. Media whose shape differs from your monitor's is scaled up until there are no gaps, and the overflow is cropped evenly from the edges.
 
@@ -48,11 +48,11 @@ The app keeps everything loaded in the background between jumpscares. As soon as
 
 A jumpscare only plays a sound when an audio file (`.wav`, `.ogg`, `.mp3`) with exactly the same name sits next to it in `assets/jumpscares/`, e.g. `scream.png` with `scream.mp3`. Without one, an image pops up silently and a video plays with just its own sound track.
 
-Dead silence at the start and end of every sound file (jumpscare sounds and cues) is trimmed automatically when it is loaded, so sounds hit right away. Anything quieter than `trim_silence_threshold` counts as silence. A video's own sound track is not trimmed.
+Dead silence at the start and end of every sound file (jumpscare sounds and files in `assets/sounds/`) is trimmed automatically when it is loaded, so sounds hit right away. Anything quieter than `trim_silence_threshold` counts as silence. A video's own sound track is not trimmed.
 
 ### No overlapping
 
-Jumpscares and audio cues never play over each other. Each one starts at least `min_gap_seconds` (5 by default) after the previous one has completely finished, counting the full length of any sound and the whole run of a GIF or video. If a timer fires too early, that event waits for the gap instead of being skipped. When both are waiting, the one that has waited longer goes first. The tray and hotkey test actions play immediately, but the next timed event still waits for them.
+Jumpscares and sounds never play over each other. Each one starts at least `min_gap_seconds` (5 by default) after the previous one has completely finished, counting the full length of any sound and the whole run of a GIF or video. If a timer fires too early, that event waits for the gap instead of being skipped. When both are waiting, the one that has waited longer goes first. The tray and hotkey test actions play immediately, but the next timed event still waits for them.
 
 Folders are rescanned on every trigger, so you can add files while the overlay is running. Media files are gitignored.
 
@@ -66,14 +66,14 @@ python -m jumpscare
 
 To keep it running without tying up the terminal, start it with `pythonw -m jumpscare &` instead. Logs go to `overlay.log` either way.
 
-A red dot appears in the system tray. Right-click it to test a jumpscare, test a cue, pause, or quit.
+A red dot appears in the system tray. Right-click it to test a jumpscare, test a sound, pause, or quit.
 
 ### Hotkeys
 
 | Default | Action |
 | --- | --- |
 | `ctrl+alt+j` | Show a jumpscare now |
-| `ctrl+alt+k` | Play an audio cue now |
+| `ctrl+alt+k` | Play a sound now |
 | `ctrl+alt+p` | Pause or resume the timers |
 
 ## Configuration
@@ -83,16 +83,16 @@ Edit `config.json`. Any key you leave out falls back to its default, and unknown
 | Key | Default | Meaning |
 | --- | --- | --- |
 | `jumpscare_folder` | `assets/jumpscares` | Image folder (relative paths resolve from the config file's folder) |
-| `cue_folder` | `assets/cues` | Audio cue folder |
+| `sound_folder` | `assets/sounds` | Folder of sounds played on their own timer |
 | `jumpscare_interval_seconds` | `{min: 180, max: 900}` | Random wait between jumpscares |
 | `jumpscare_duration_ms` | `1000` | How long a still image is on screen (GIFs and videos play in full instead) |
 | `jumpscare_audio_chance` | `1.0` | Probability a same-named sound plays with its jumpscare |
 | `jumpscare_volume` | `1.0` | Jumpscare volume (sounds and video sound tracks), 0 to 1 |
-| `cues_enabled` | `true` | Turn the cue timer on or off |
-| `cue_interval_seconds` | `{min: 60, max: 300}` | Random wait between cues |
-| `cue_volume` | `0.8` | Cue volume, 0 to 1 |
+| `sounds_enabled` | `true` | Turn the sound timer on or off |
+| `sound_interval_seconds` | `{min: 60, max: 300}` | Random wait between sounds |
+| `sound_volume` | `0.8` | Sound volume, 0 to 1 |
 | `trim_silence_threshold` | `0.01` | Level (fraction of full volume) below which leading and trailing audio is cut, `0` to disable |
-| `min_gap_seconds` | `5` | Minimum quiet time between the end of one jumpscare or cue and the start of the next |
+| `min_gap_seconds` | `5` | Minimum quiet time between the end of one jumpscare or sound and the start of the next |
 | `monitor` | `0` | Screen index to show jumpscares on (falls back to primary) |
 | `hotkeys` | see above | Key combos in `keyboard` library syntax; an empty string disables one |
 
@@ -113,7 +113,7 @@ jumpscare/
   overlay.py    transparent click-through window, GIF and video playback
   audio.py      pygame mixer wrapper, silence trimming
   media.py      file discovery and random selection
-  gate.py       keeps jumpscares and cues from overlapping
+  gate.py       keeps jumpscares and sounds from overlapping
   chroma.py     green screen detection and keying
   config.py     config loading and validation
 tests/

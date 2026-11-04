@@ -50,7 +50,7 @@ def _single_shot_timer(parent: QObject, slot) -> QTimer:
 class OverlayApp(QObject):
     # Hotkey callbacks run on the keyboard library's thread; signals hop them onto the Qt thread.
     jumpscare_requested = Signal()
-    cue_requested = Signal()
+    sound_requested = Signal()
     pause_toggle_requested = Signal()
 
     def __init__(self, qt_app: QApplication, cfg: Config) -> None:
@@ -59,7 +59,7 @@ class OverlayApp(QObject):
         self._cfg = cfg
         self._rng = random.Random()
         self._media_picker = RandomPicker(self._rng)
-        self._cue_picker = RandomPicker(self._rng)
+        self._sound_picker = RandomPicker(self._rng)
         self._paused = False
 
         self._audio = AudioPlayer(cfg.trim_silence_threshold)
@@ -71,10 +71,10 @@ class OverlayApp(QObject):
         self._waiting: dict[str, float] = {}  # event name -> when it first had to wait
 
         self._scare_timer = _single_shot_timer(self, self._on_scare_timer)
-        self._cue_timer = _single_shot_timer(self, self._on_cue_timer)
+        self._sound_timer = _single_shot_timer(self, self._on_sound_timer)
 
         self.jumpscare_requested.connect(self.trigger_jumpscare)
-        self.cue_requested.connect(self.trigger_cue)
+        self.sound_requested.connect(self.trigger_sound)
         self.pause_toggle_requested.connect(lambda: self.set_paused(not self._paused))
 
         self._tray = self._build_tray()
@@ -84,7 +84,7 @@ class OverlayApp(QObject):
         tray.setToolTip("Jumpscare overlay")
         menu = QMenu()
         menu.addAction("Test jumpscare", self.trigger_jumpscare)
-        menu.addAction("Test audio cue", self.trigger_cue)
+        menu.addAction("Test sound", self.trigger_sound)
         menu.addSeparator()
         self._pause_action = QAction("Pause", menu, checkable=True)
         self._pause_action.toggled.connect(self.set_paused)
@@ -97,7 +97,7 @@ class OverlayApp(QObject):
     def _register_hotkeys(self) -> None:
         bindings = {
             self._cfg.hotkeys.test_jumpscare: self.jumpscare_requested.emit,
-            self._cfg.hotkeys.test_cue: self.cue_requested.emit,
+            self._cfg.hotkeys.test_sound: self.sound_requested.emit,
             self._cfg.hotkeys.toggle_pause: self.pause_toggle_requested.emit,
         }
         for combo, callback in bindings.items():
@@ -118,25 +118,25 @@ class OverlayApp(QObject):
 
     def _schedule(self) -> None:
         self._schedule_scare()
-        self._schedule_cue()
+        self._schedule_sound()
 
     def _schedule_scare(self) -> None:
         delay = random_delay_ms(self._cfg.jumpscare_interval, self._rng)
         self._scare_timer.start(delay)
         log.info("Next jumpscare in %.0fs", delay / 1000)
 
-    def _schedule_cue(self) -> None:
-        if not self._cfg.cues_enabled:
+    def _schedule_sound(self) -> None:
+        if not self._cfg.sounds_enabled:
             return
-        delay = random_delay_ms(self._cfg.cue_interval, self._rng)
-        self._cue_timer.start(delay)
-        log.info("Next audio cue in %.0fs", delay / 1000)
+        delay = random_delay_ms(self._cfg.sound_interval, self._rng)
+        self._sound_timer.start(delay)
+        log.info("Next sound in %.0fs", delay / 1000)
 
     def _defer_if_busy(self, timer: QTimer, name: str) -> bool:
         """Restart timer for when the gate frees up. Returns True if the event had to wait.
 
         When both events are waiting, the one that started waiting first goes first,
-        so a frequent jumpscare can't keep pushing the cue back forever.
+        so a frequent jumpscare can't keep pushing the sound back forever.
         """
         wait = self._gate.wait_s()
         first_in_line = min(self._waiting, key=self._waiting.__getitem__, default=name)
@@ -158,11 +158,11 @@ class OverlayApp(QObject):
         self.trigger_jumpscare()
         self._schedule_scare()
 
-    def _on_cue_timer(self) -> None:
-        if self._defer_if_busy(self._cue_timer, "Audio cue"):
+    def _on_sound_timer(self) -> None:
+        if self._defer_if_busy(self._sound_timer, "Sound"):
             return
-        self.trigger_cue()
-        self._schedule_cue()
+        self.trigger_sound()
+        self._schedule_sound()
 
     def _prepare_next(self) -> None:
         """Load the next jumpscare and its sound during the quiet time before it plays."""
@@ -196,13 +196,13 @@ class OverlayApp(QObject):
         sound_s = self._audio.play(scare.sound, self._cfg.jumpscare_volume) if scare.sound else 0.0
         self._gate.occupy(sound_s, open_ended=True)  # released when the overlay finishes
 
-    def trigger_cue(self) -> None:
-        cue = self._cue_picker.pick(list_files(self._cfg.cue_folder, AUDIO_EXTS))
-        if cue is None:
-            log.info("No audio cues found in %s", self._cfg.cue_folder)
+    def trigger_sound(self) -> None:
+        sound = self._sound_picker.pick(list_files(self._cfg.sound_folder, AUDIO_EXTS))
+        if sound is None:
+            log.info("No sounds found in %s", self._cfg.sound_folder)
             return
-        log.info("Audio cue: %s", cue.name)
-        self._gate.occupy(self._audio.play(cue, self._cfg.cue_volume))
+        log.info("Sound: %s", sound.name)
+        self._gate.occupy(self._audio.play(sound, self._cfg.sound_volume))
 
     def set_paused(self, paused: bool) -> None:
         if paused == self._paused:
@@ -211,7 +211,7 @@ class OverlayApp(QObject):
         self._pause_action.setChecked(paused)
         if paused:
             self._scare_timer.stop()
-            self._cue_timer.stop()
+            self._sound_timer.stop()
             self._waiting.clear()
             log.info("Paused")
         else:
