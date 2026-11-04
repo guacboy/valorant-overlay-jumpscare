@@ -13,8 +13,8 @@ DEFAULTS: dict = {
     "jumpscare_sound_folder": "assets/jumpscare_sounds",
     "cue_folder": "assets/cues",
     "jumpscare_interval_seconds": {"min": 180, "max": 900},
-    "jumpscare_duration_ms": 1200,
-    "jumpscare_fade_ms": 250,
+    "jumpscare_duration_ms": 1000,
+    "jumpscare_fade_ms": 200,
     "jumpscare_scale": 0.9,
     "jumpscare_audio_chance": 1.0,
     "jumpscare_volume": 1.0,
@@ -112,6 +112,10 @@ def load_config(path: Path = DEFAULT_CONFIG_PATH) -> Config:
             raise ConfigError(f"{path} is not valid JSON: {exc}") from exc
     raw = _merge(DEFAULTS, user)
     base_dir = path.resolve().parent
+
+    # Duration is total time on screen, so the fade must fit inside it.
+    if int(raw["jumpscare_fade_ms"]) > int(raw["jumpscare_duration_ms"]):
+        raise ConfigError("jumpscare_fade_ms must not exceed jumpscare_duration_ms")
 
     def folder(name: str) -> Path:
         p = Path(raw[name])

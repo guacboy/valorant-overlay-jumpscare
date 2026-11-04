@@ -25,9 +25,11 @@ The last line enables the pre-push hook, which runs the test suite and blocks th
 
 | Folder | Contents |
 | --- | --- |
-| `assets/jumpscares/` | Images (`.png`, `.jpg`, `.jpeg`, `.webp`) |
+| `assets/jumpscares/` | Images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`) |
 | `assets/jumpscare_sounds/` | Fallback jumpscare sounds (`.wav`, `.ogg`, `.mp3`) |
 | `assets/cues/` | Audio cues played on their own timer |
+
+Still images stay on screen for `jumpscare_duration_ms` (1 second by default). Animated GIFs ignore that setting: each GIF plays through once in full, then fades out, even if the file is set to loop.
 
 To give an image its own sound, put an audio file with the same name next to it, e.g. `scream.png` with `scream.mp3`. Images without a paired sound use a random file from `assets/jumpscare_sounds/` (if any).
 
@@ -61,8 +63,8 @@ Edit `config.json`. Any key you leave out falls back to its default, and unknown
 | `jumpscare_sound_folder` | `assets/jumpscare_sounds` | Fallback sound folder |
 | `cue_folder` | `assets/cues` | Audio cue folder |
 | `jumpscare_interval_seconds` | `{min: 180, max: 900}` | Random wait between jumpscares |
-| `jumpscare_duration_ms` | `1200` | How long the image stays fully visible |
-| `jumpscare_fade_ms` | `250` | Fade-out length, `0` for an instant cut |
+| `jumpscare_duration_ms` | `1000` | Total time a still image is on screen, fade included (GIFs play in full instead) |
+| `jumpscare_fade_ms` | `200` | Fade-out length, `0` for an instant cut; must not exceed the duration |
 | `jumpscare_scale` | `0.9` | Max image size as a fraction of the screen |
 | `jumpscare_audio_chance` | `1.0` | Probability a jumpscare plays a sound |
 | `jumpscare_volume` | `1.0` | Jumpscare volume, 0 to 1 |

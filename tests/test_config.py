@@ -46,6 +46,7 @@ def test_absolute_folder_kept(tmp_path):
         {"jumpscare_scale": 0},
         {"jumpscare_duration_ms": 0},
         {"jumpscare_fade_ms": -1},
+        {"jumpscare_duration_ms": 500, "jumpscare_fade_ms": 600},
         {"monitor": -1},
     ],
 )

@@ -7,7 +7,7 @@ from typing import Sequence, TypeVar
 
 from jumpscare.config import Config, Interval
 
-IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".webp")
+IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".webp", ".gif")
 AUDIO_EXTS = (".wav", ".ogg", ".mp3")
 
 T = TypeVar("T")
