@@ -9,7 +9,7 @@
   "jumpscare_audio_chance": 1.0,
   "jumpscare_volume": 1.0,
   "cues_enabled": true,
-  "cue_interval_seconds": { "min": 60, "max": 300 },
+  "cue_interval_seconds": { "min": 15, "max": 60 },
   "cue_volume": 0.8,
   "trim_silence_threshold": 0.01,
   "monitor": 0,
