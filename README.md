@@ -30,13 +30,13 @@ On macOS or Linux the activate script is at `.venv/bin/activate` instead. The la
 | `assets/jumpscares/` | Images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`) and videos (`.mp4`, `.webm`, `.mov`, `.mkv`, `.avi`) |
 | `assets/sounds/` | Sounds (`.wav`, `.ogg`, `.mp3`) played on their own timer |
 
-Every jumpscare fills the whole screen. Media whose shape differs from your monitor's is scaled up until there are no gaps, and the overflow is cropped evenly from the edges.
+Every jumpscare is shown at its original size, centered on the screen, and is never stretched or cropped. Media larger than your screen is shrunk just enough to fit. Images with a transparent background (PNG, WebP, GIF) keep it, so only the subject appears over your game. Image viewers often show transparency as a gray and white checkerboard, but that pattern is not part of the file.
 
 Still images pop up for `jumpscare_duration_ms` (1 second by default) and then vanish instantly, with no fade. Animated GIFs and videos ignore that setting: each one plays through once for its full length, then vanishes. GIFs that are set to loop still play only once. Videos play with their own sound track at `jumpscare_volume`.
 
 ### Green screen videos
 
-Green screen videos are keyed automatically. When a video is loaded, the overlay checks the edges of its first frame. If they are mostly bright green, the green is removed from every frame (with soft edges and green spill cleanup) so only the subject appears over your game. Videos without a green border play unchanged, so green objects in normal footage are left alone. To keep 60 fps video smooth, keyed frames are processed at up to 960 pixels wide and then scaled to your screen, which softens the cut-out edges slightly.
+Green screen videos are keyed automatically. When a video is loaded, the overlay checks the edges of its first frame. If they are mostly bright green, the green is removed from every frame (with soft edges and green spill cleanup) so only the subject appears over your game. Videos without a green border play unchanged, so green objects in normal footage are left alone. To keep 60 fps video smooth, keyed frames wider than 960 pixels are processed at 960 pixels wide and then scaled back to their original size, which softens the cut-out edges slightly.
 
 Video frames are converted and keyed on a background thread, so the overlay never falls behind the video's sound. If your PC is busy (for example mid-match), the overlay skips a frame instead of slowing the video down.
 

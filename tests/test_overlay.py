@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QColor, QPixmap
 from PySide6.QtTest import QTest
 
@@ -79,14 +79,34 @@ def test_window_is_click_through_and_unfocusable(qt_app):
     assert flags & Qt.WindowType.WindowStaysOnTopHint
 
 
-def test_image_fills_whole_screen(qt_app, tmp_path):
+def test_image_keeps_original_size_centered(qt_app, tmp_path):
     ov = overlay(duration_ms=50)
-    assert ov.prepare(make_png(tmp_path / "wide.png", 300, 100)) is True  # different shape than screen
+    assert ov.prepare(make_png(tmp_path / "wide.png", 300, 100)) is True
     assert ov.play() is True
-    assert ov.geometry() == qt_app.primaryScreen().geometry()
-    assert ov.current_frame().size() == screen_size(qt_app)
+    assert ov.size() == QSize(300, 100)
+    assert ov.geometry().center() == qt_app.primaryScreen().geometry().center()
+    assert ov.current_frame().size() == QSize(300, 100)
     QTest.qWait(300)
     assert not ov.isVisible()
+
+
+def test_image_larger_than_screen_shrinks_to_fit(qt_app, tmp_path):
+    screen = screen_size(qt_app)
+    ov = overlay(duration_ms=50)
+    ov.prepare(make_png(tmp_path / "huge.png", screen.width() * 3, screen.height()))
+    ov.play()
+    assert ov.size() == QSize(screen.width(), screen.height() // 3)
+    QTest.qWait(300)
+
+
+def test_display_size():
+    from jumpscare.overlay import display_size
+
+    screen = QSize(1920, 1080)
+    assert display_size(QSize(250, 250), screen) == QSize(250, 250)
+    assert display_size(QSize(1920, 1080), screen) == screen
+    assert display_size(QSize(3840, 2160), screen) == screen
+    assert display_size(QSize(1000, 2160), screen) == QSize(500, 1080)
 
 
 def test_still_image_shows_one_second_then_vanishes_without_fade(qt_app, tmp_path):
@@ -107,7 +127,7 @@ def test_gif_plays_fully_once_then_hides(qt_app, tmp_path):
     ov.play()
     QTest.qWait(200)
     assert ov.isVisible(), "GIF was cut off before finishing"
-    assert ov.current_frame().size() == screen_size(qt_app)
+    assert ov.current_frame().size() == QSize(1, 1)  # original size
     QTest.qWait(700)
     assert not ov.isVisible(), "GIF kept looping instead of closing"
 
@@ -131,12 +151,12 @@ def test_finished_emitted_once_per_play(qt_app, tmp_path):
     assert count == [1]
 
 
-def test_green_screen_video_is_keyed_and_fullscreen(qt_app, tmp_path):
-    video = write_avi(tmp_path / "green.avi", green_screen_frames(5))
+def test_green_screen_video_is_keyed_at_original_size(qt_app, tmp_path):
+    video = write_avi(tmp_path / "green.avi", green_screen_frames(5))  # 64x48
     ov = overlay()
     snapshot = play_video_until_hidden(ov, video)
     assert ov.video_keyed is True
-    assert snapshot.size() == screen_size(qt_app)
+    assert snapshot.size() == QSize(64, 48)
     assert snapshot.pixelColor(1, 1).alpha() == 0
     center = snapshot.pixelColor(snapshot.width() // 2, snapshot.height() // 2)
     assert center.alpha() == 255 and center.red() > 150
@@ -165,22 +185,24 @@ def test_missing_video_rejected(qt_app, tmp_path):
 
 
 def test_render_sizes(qt_app):
-    from PySide6.QtCore import QSize
     from PySide6.QtGui import QImage
 
     from jumpscare.overlay import KEY_MAX_WIDTH, render_video_frame
 
     frame = QImage(1920, 1080, QImage.Format.Format_RGB32)
     frame.fill(QColor(0, 200, 0))
-    screen = QSize(2560, 1440)
-    assert render_video_frame(frame, screen, key=False).size() == screen
-    keyed = render_video_frame(frame, screen, key=True)
-    assert keyed.width() == KEY_MAX_WIDTH
-    assert abs(keyed.width() / keyed.height() - screen.width() / screen.height()) < 0.01
+    assert render_video_frame(frame, QSize(2560, 1440), key=False).size() == QSize(1920, 1080)
+    assert render_video_frame(frame, QSize(1280, 720), key=False).size() == QSize(1280, 720)
+    keyed = render_video_frame(frame, QSize(2560, 1440), key=True)
+    assert keyed.width() == KEY_MAX_WIDTH  # keyed small, scaled back up when painted
+    assert abs(keyed.width() / keyed.height() - 16 / 9) < 0.01
+    small = QImage(640, 360, QImage.Format.Format_RGB32)
+    small.fill(QColor(0, 200, 0))
+    assert render_video_frame(small, QSize(2560, 1440), key=True).size() == QSize(640, 360)
 
 
 def test_renderer_skips_to_newest_frame(qt_app):
-    from PySide6.QtCore import QSize, QThreadPool
+    from PySide6.QtCore import QThreadPool
     from PySide6.QtGui import QImage
     from PySide6.QtMultimedia import QVideoFrame
 
