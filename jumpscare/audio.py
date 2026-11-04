@@ -52,15 +52,18 @@ class AudioPlayer:
             self._cache[key] = sound
         return self._cache[key]
 
-    def play(self, path: Path, volume: float) -> None:
+    def play(self, path: Path, volume: float) -> float:
+        """Play the sound and return its length in seconds (0 if it could not be played)."""
         if not self.available:
-            return
+            return 0.0
         try:
             sound = self._load(path)
             sound.set_volume(volume)
             sound.play()
+            return sound.get_length()
         except (pygame.error, OSError) as exc:
             log.warning("Could not play %s: %s", path.name, exc)
+            return 0.0
 
     def shutdown(self) -> None:
         if self.available:

@@ -22,6 +22,7 @@ DEFAULTS: dict = {
     "cue_interval_seconds": {"min": 60, "max": 300},
     "cue_volume": 0.8,
     "trim_silence_threshold": 0.01,
+    "min_gap_seconds": 5,
     "monitor": 0,
     "hotkeys": {
         "test_jumpscare": "ctrl+alt+j",
@@ -63,6 +64,7 @@ class Config:
     cue_interval: Interval
     cue_volume: float
     trim_silence_threshold: float
+    min_gap_seconds: float
     monitor: int
     hotkeys: Hotkeys
 
@@ -103,6 +105,13 @@ def _non_negative_int(raw: dict, name: str, allow_zero: bool = True) -> int:
     return value
 
 
+def _non_negative_float(raw: dict, name: str) -> float:
+    value = float(raw[name])
+    if value < 0:
+        raise ConfigError(f"{name} must be >= 0 (got {value})")
+    return value
+
+
 def load_config(path: Path = DEFAULT_CONFIG_PATH) -> Config:
     """Read config from path, filling in defaults. A missing file means all defaults."""
     path = Path(path)
@@ -137,6 +146,7 @@ def load_config(path: Path = DEFAULT_CONFIG_PATH) -> Config:
         cue_interval=_interval(raw["cue_interval_seconds"], "cue_interval_seconds"),
         cue_volume=_fraction(raw, "cue_volume"),
         trim_silence_threshold=_fraction(raw, "trim_silence_threshold"),
+        min_gap_seconds=_non_negative_float(raw, "min_gap_seconds"),
         monitor=_non_negative_int(raw, "monitor"),
         hotkeys=Hotkeys(**{k: str(v).strip() for k, v in raw["hotkeys"].items()}),
     )

@@ -43,6 +43,10 @@ To give an image or video its own sound, put an audio file with the same name ne
 
 Dead silence at the start and end of every sound file (jumpscare sounds and cues) is trimmed automatically when it is loaded, so sounds hit right away. Anything quieter than `trim_silence_threshold` counts as silence. A video's own sound track is not trimmed.
 
+### No overlapping
+
+Jumpscares and audio cues never play over each other. Each one starts at least `min_gap_seconds` (5 by default) after the previous one has completely finished, counting the full length of any sound and the whole run of a GIF or video. If a timer fires too early, that event waits for the gap instead of being skipped. When both are waiting, the one that has waited longer goes first. The tray and hotkey test actions play immediately, but the next timed event still waits for them.
+
 Folders are rescanned on every trigger, so you can add files while the overlay is running. Media files are gitignored.
 
 ## Running
@@ -84,6 +88,7 @@ Edit `config.json`. Any key you leave out falls back to its default, and unknown
 | `cue_interval_seconds` | `{min: 60, max: 300}` | Random wait between cues |
 | `cue_volume` | `0.8` | Cue volume, 0 to 1 |
 | `trim_silence_threshold` | `0.01` | Level (fraction of full volume) below which leading and trailing audio is cut, `0` to disable |
+| `min_gap_seconds` | `5` | Minimum quiet time between the end of one jumpscare or cue and the start of the next |
 | `monitor` | `0` | Screen index to show jumpscares on (falls back to primary) |
 | `hotkeys` | see above | Key combos in `keyboard` library syntax; an empty string disables one |
 
@@ -104,6 +109,7 @@ jumpscare/
   overlay.py    transparent click-through window, GIF and video playback
   audio.py      pygame mixer wrapper, silence trimming
   media.py      file discovery and random selection
+  gate.py       keeps jumpscares and cues from overlapping
   chroma.py     green screen detection and keying
   config.py     config loading and validation
 tests/

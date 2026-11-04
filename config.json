@@ -12,6 +12,7 @@
   "cue_interval_seconds": { "min": 15, "max": 60 },
   "cue_volume": 0.8,
   "trim_silence_threshold": 0.01,
+  "min_gap_seconds": 5,
   "monitor": 0,
   "hotkeys": {
     "test_jumpscare": "ctrl+alt+j",

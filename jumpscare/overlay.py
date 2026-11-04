@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 import numpy as np
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRect, QSize, Qt, QTimer, QUrl
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRect, QSize, Qt, QTimer, QUrl, Signal
 from PySide6.QtGui import QGuiApplication, QImage, QImageReader, QMovie, QPixmap
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer, QVideoFrame, QVideoSink
 from PySide6.QtWidgets import QLabel, QWidget
@@ -28,6 +28,8 @@ def rgba_to_qimage(rgba: np.ndarray) -> QImage:
 
 
 class JumpscareOverlay(QWidget):
+    finished = Signal()  # emitted when the image, GIF or video has fully disappeared
+
     def __init__(self, monitor: int, scale: float, fade_ms: int) -> None:
         super().__init__(
             None,
@@ -209,3 +211,4 @@ class JumpscareOverlay(QWidget):
     def _finish(self) -> None:
         self.hide()
         self._reset()
+        self.finished.emit()
