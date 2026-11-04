@@ -14,7 +14,6 @@ DEFAULTS: dict = {
     "cue_folder": "assets/cues",
     "jumpscare_interval_seconds": {"min": 180, "max": 900},
     "jumpscare_duration_ms": 1000,
-    "jumpscare_fade_ms": 200,
     "jumpscare_scale": 0.9,
     "jumpscare_audio_chance": 1.0,
     "jumpscare_volume": 1.0,
@@ -56,7 +55,6 @@ class Config:
     cue_folder: Path
     jumpscare_interval: Interval
     jumpscare_duration_ms: int
-    jumpscare_fade_ms: int
     jumpscare_scale: float
     jumpscare_audio_chance: float
     jumpscare_volume: float
@@ -124,10 +122,6 @@ def load_config(path: Path = DEFAULT_CONFIG_PATH) -> Config:
     raw = _merge(DEFAULTS, user)
     base_dir = path.resolve().parent
 
-    # Duration is total time on screen, so the fade must fit inside it.
-    if int(raw["jumpscare_fade_ms"]) > int(raw["jumpscare_duration_ms"]):
-        raise ConfigError("jumpscare_fade_ms must not exceed jumpscare_duration_ms")
-
     def folder(name: str) -> Path:
         p = Path(raw[name])
         return p if p.is_absolute() else base_dir / p
@@ -138,7 +132,6 @@ def load_config(path: Path = DEFAULT_CONFIG_PATH) -> Config:
         cue_folder=folder("cue_folder"),
         jumpscare_interval=_interval(raw["jumpscare_interval_seconds"], "jumpscare_interval_seconds"),
         jumpscare_duration_ms=_non_negative_int(raw, "jumpscare_duration_ms", allow_zero=False),
-        jumpscare_fade_ms=_non_negative_int(raw, "jumpscare_fade_ms"),
         jumpscare_scale=_fraction(raw, "jumpscare_scale", allow_zero=False),
         jumpscare_audio_chance=_fraction(raw, "jumpscare_audio_chance"),
         jumpscare_volume=_fraction(raw, "jumpscare_volume"),

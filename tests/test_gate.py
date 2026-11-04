@@ -68,7 +68,7 @@ def test_cue_waits_for_jumpscare_and_gap(qt_app, tmp_path):
     pixmap.save(str(folder / "face.png"), "PNG")
     cfg_path = tmp_path / "config.json"
     cfg_path.write_text(
-        json.dumps({"jumpscare_duration_ms": 100, "jumpscare_fade_ms": 0, "min_gap_seconds": 0.3}),
+        json.dumps({"jumpscare_duration_ms": 100, "min_gap_seconds": 0.3}),
         encoding="utf-8",
     )
     app = OverlayApp(qt_app, load_config(cfg_path))

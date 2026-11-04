@@ -29,7 +29,7 @@ def make_gif(path, frames, delay_cs, loop_forever=True):
 
 def test_gif_plays_fully_once_then_hides(qt_app, tmp_path):
     gif = make_gif(tmp_path / "anim.gif", frames=4, delay_cs=10)  # about 400ms total
-    overlay = JumpscareOverlay(monitor=0, scale=0.5, fade_ms=0)
+    overlay = JumpscareOverlay(monitor=0, scale=0.5)
     assert overlay.show_image(gif, 50) is True  # duration is ignored for animated GIFs
 
     QTest.qWait(200)
@@ -41,7 +41,7 @@ def test_gif_plays_fully_once_then_hides(qt_app, tmp_path):
 
 def test_single_frame_gif_uses_duration(qt_app, tmp_path):
     gif = make_gif(tmp_path / "still.gif", frames=1, delay_cs=0, loop_forever=False)
-    overlay = JumpscareOverlay(monitor=0, scale=0.5, fade_ms=0)
+    overlay = JumpscareOverlay(monitor=0, scale=0.5)
     assert overlay.show_image(gif, 100) is True
     QTest.qWait(400)
     assert not overlay.isVisible()
@@ -50,20 +50,20 @@ def test_single_frame_gif_uses_duration(qt_app, tmp_path):
 def test_rejects_unreadable_image(qt_app, tmp_path):
     bad = tmp_path / "bad.png"
     bad.write_bytes(b"not an image")
-    overlay = JumpscareOverlay(monitor=0, scale=0.9, fade_ms=0)
+    overlay = JumpscareOverlay(monitor=0, scale=0.9)
     assert overlay.show_image(bad, 100) is False
     assert not overlay.isVisible()
 
 
 def test_window_is_click_through_and_unfocusable(qt_app):
-    flags = JumpscareOverlay(monitor=0, scale=0.9, fade_ms=0).windowFlags()
+    flags = JumpscareOverlay(monitor=0, scale=0.9).windowFlags()
     assert flags & Qt.WindowType.WindowTransparentForInput
     assert flags & Qt.WindowType.WindowDoesNotAcceptFocus
     assert flags & Qt.WindowType.WindowStaysOnTopHint
 
 
 def test_shows_scaled_image_then_hides(qt_app, tmp_path):
-    overlay = JumpscareOverlay(monitor=99, scale=0.5, fade_ms=50)  # out-of-range monitor -> primary
+    overlay = JumpscareOverlay(monitor=99, scale=0.5)  # out-of-range monitor -> primary
     assert overlay.show_image(make_png(tmp_path / "ok.png"), 50) is True
     assert overlay.isVisible()
 
@@ -93,7 +93,7 @@ def play_until_hidden(overlay, path, timeout_ms=4000):
 
 def test_green_screen_video_is_keyed(qt_app, tmp_path):
     video = write_avi(tmp_path / "green.avi", green_screen_frames(5))
-    overlay = JumpscareOverlay(monitor=0, scale=0.5, fade_ms=0)
+    overlay = JumpscareOverlay(monitor=0, scale=0.5)
     snapshot = play_until_hidden(overlay, video)
     assert overlay.video_keyed is True
     assert snapshot.pixelColor(1, 1).alpha() == 0
@@ -106,12 +106,22 @@ def test_normal_video_is_not_keyed(qt_app, tmp_path):
     for f in frames:
         f[:] = (90, 80, 70)
     video = write_avi(tmp_path / "plain.avi", frames)
-    overlay = JumpscareOverlay(monitor=0, scale=0.5, fade_ms=0)
+    overlay = JumpscareOverlay(monitor=0, scale=0.5)
     snapshot = play_until_hidden(overlay, video)
     assert overlay.video_keyed is False
     assert snapshot.pixelColor(1, 1).alpha() == 255
 
 
 def test_missing_video_rejected(qt_app, tmp_path):
-    overlay = JumpscareOverlay(monitor=0, scale=0.5, fade_ms=0)
+    overlay = JumpscareOverlay(monitor=0, scale=0.5)
     assert overlay.show_video(tmp_path / "nope.mp4", 0.0) is False
+
+
+def test_still_image_shows_one_second_then_vanishes_without_fade(qt_app, tmp_path):
+    overlay = JumpscareOverlay(monitor=0, scale=0.5)
+    assert overlay.show_image(make_png(tmp_path / "pop.png"), 1000) is True
+    QTest.qWait(900)
+    assert overlay.isVisible()
+    assert overlay.windowOpacity() == 1.0
+    QTest.qWait(250)
+    assert not overlay.isVisible()

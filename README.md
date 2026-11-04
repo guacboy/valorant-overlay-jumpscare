@@ -31,7 +31,7 @@ On macOS or Linux the activate script is at `.venv/bin/activate` instead. The la
 | `assets/jumpscare_sounds/` | Fallback jumpscare sounds (`.wav`, `.ogg`, `.mp3`) |
 | `assets/cues/` | Audio cues played on their own timer |
 
-Still images stay on screen for `jumpscare_duration_ms` (1 second by default). Animated GIFs ignore that setting: each GIF plays through once in full, then fades out, even if the file is set to loop. Videos also play once in full, with their own sound track at `jumpscare_volume`.
+Still images pop up for `jumpscare_duration_ms` (1 second by default) and then vanish instantly, with no fade. Animated GIFs and videos ignore that setting: each one plays through once for its full length, then vanishes. GIFs that are set to loop still play only once. Videos play with their own sound track at `jumpscare_volume`.
 
 ### Green screen videos
 
@@ -79,8 +79,7 @@ Edit `config.json`. Any key you leave out falls back to its default, and unknown
 | `jumpscare_sound_folder` | `assets/jumpscare_sounds` | Fallback sound folder |
 | `cue_folder` | `assets/cues` | Audio cue folder |
 | `jumpscare_interval_seconds` | `{min: 180, max: 900}` | Random wait between jumpscares |
-| `jumpscare_duration_ms` | `1000` | Total time a still image is on screen, fade included (GIFs play in full instead) |
-| `jumpscare_fade_ms` | `200` | Fade-out length, `0` for an instant cut; must not exceed the duration |
+| `jumpscare_duration_ms` | `1000` | How long a still image is on screen (GIFs and videos play in full instead) |
 | `jumpscare_scale` | `0.9` | Max image size as a fraction of the screen |
 | `jumpscare_audio_chance` | `1.0` | Probability a jumpscare plays a sound |
 | `jumpscare_volume` | `1.0` | Jumpscare volume (sounds and video sound tracks), 0 to 1 |

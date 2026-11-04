@@ -4,7 +4,6 @@
   "cue_folder": "assets/cues",
   "jumpscare_interval_seconds": { "min": 15, "max": 60 },
   "jumpscare_duration_ms": 1000,
-  "jumpscare_fade_ms": 200,
   "jumpscare_scale": 0.9,
   "jumpscare_audio_chance": 1.0,
   "jumpscare_volume": 1.0,

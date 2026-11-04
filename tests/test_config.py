@@ -45,8 +45,7 @@ def test_absolute_folder_kept(tmp_path):
         {"jumpscare_volume": 1.5},
         {"jumpscare_scale": 0},
         {"jumpscare_duration_ms": 0},
-        {"jumpscare_fade_ms": -1},
-        {"jumpscare_duration_ms": 500, "jumpscare_fade_ms": 600},
+        {"jumpscare_fade_ms": 200},  # removed setting
         {"monitor": -1},
         {"min_gap_seconds": -1},
     ],

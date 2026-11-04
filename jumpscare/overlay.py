@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 import numpy as np
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRect, QSize, Qt, QTimer, QUrl, Signal
+from PySide6.QtCore import QRect, QSize, Qt, QTimer, QUrl, Signal
 from PySide6.QtGui import QGuiApplication, QImage, QImageReader, QMovie, QPixmap
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer, QVideoFrame, QVideoSink
 from PySide6.QtWidgets import QLabel, QWidget
@@ -30,7 +30,7 @@ def rgba_to_qimage(rgba: np.ndarray) -> QImage:
 class JumpscareOverlay(QWidget):
     finished = Signal()  # emitted when the image, GIF or video has fully disappeared
 
-    def __init__(self, monitor: int, scale: float, fade_ms: int) -> None:
+    def __init__(self, monitor: int, scale: float) -> None:
         super().__init__(
             None,
             Qt.WindowType.FramelessWindowHint
@@ -45,7 +45,6 @@ class JumpscareOverlay(QWidget):
 
         self._monitor = monitor
         self._scale = scale
-        self._fade_ms = fade_ms
         self._movie: QMovie | None = None
         self._player: QMediaPlayer | None = None
         self._sink: QVideoSink | None = None
@@ -57,11 +56,7 @@ class JumpscareOverlay(QWidget):
 
         self._hide_timer = QTimer(self)
         self._hide_timer.setSingleShot(True)
-        self._hide_timer.timeout.connect(self._start_fade)
-
-        self._fade = QPropertyAnimation(self, b"windowOpacity", self)
-        self._fade.setEasingCurve(QEasingCurve.Type.InQuad)
-        self._fade.finished.connect(self._finish)
+        self._hide_timer.timeout.connect(self._finish)
 
     @property
     def video_keyed(self) -> bool | None:
@@ -74,7 +69,7 @@ class JumpscareOverlay(QWidget):
         return (screen or QGuiApplication.primaryScreen()).geometry()
 
     def show_image(self, path: Path, duration_ms: int) -> bool:
-        """Show a still image for duration_ms total (fade included), or play a GIF once through.
+        """Show a still image for duration_ms, or play a GIF once through. Both vanish instantly.
 
         Returns False if the file can't be loaded.
         """
@@ -96,7 +91,7 @@ class JumpscareOverlay(QWidget):
             )
         )
         self._present()
-        self._hide_timer.start(max(duration_ms - self._fade_ms, 0))
+        self._hide_timer.start(duration_ms)
         return True
 
     def show_video(self, path: Path, volume: float) -> bool:
@@ -140,7 +135,7 @@ class JumpscareOverlay(QWidget):
         movie = self._movie
         if movie is None or frame != movie.frameCount() - 1:
             return
-        # Last frame: freeze it so the GIF does not loop, let it show for its delay, then fade.
+        # Last frame: freeze it so the GIF does not loop, let it show for its delay, then vanish.
         delay = max(movie.nextFrameDelay(), 1)
         movie.setPaused(True)
         self._hide_timer.start(delay)
@@ -168,7 +163,7 @@ class JumpscareOverlay(QWidget):
         if self.sender() is not self._player:
             return
         if status == QMediaPlayer.MediaStatus.EndOfMedia:
-            self._start_fade()  # last frame stays on screen during the fade
+            self._finish()
         elif status == QMediaPlayer.MediaStatus.InvalidMedia:
             self._finish()
 
@@ -180,7 +175,6 @@ class JumpscareOverlay(QWidget):
 
     def _reset(self) -> None:
         self._hide_timer.stop()
-        self._fade.stop()
         if self._movie is not None:
             self._movie.stop()
             self._movie = None
@@ -195,18 +189,8 @@ class JumpscareOverlay(QWidget):
         geo = self._screen_geometry()
         self.setGeometry(geo)
         self._label.setGeometry(0, 0, geo.width(), geo.height())
-        self.setWindowOpacity(1.0)
         self.show()
         self.raise_()
-
-    def _start_fade(self) -> None:
-        if self._fade_ms <= 0:
-            self._finish()
-            return
-        self._fade.setDuration(self._fade_ms)
-        self._fade.setStartValue(1.0)
-        self._fade.setEndValue(0.0)
-        self._fade.start()
 
     def _finish(self) -> None:
         self.hide()

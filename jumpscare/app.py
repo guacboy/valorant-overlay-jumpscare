@@ -63,7 +63,7 @@ class OverlayApp(QObject):
         self._paused = False
 
         self._audio = AudioPlayer(cfg.trim_silence_threshold)
-        self._overlay = JumpscareOverlay(cfg.monitor, cfg.jumpscare_scale, cfg.jumpscare_fade_ms)
+        self._overlay = JumpscareOverlay(cfg.monitor, cfg.jumpscare_scale)
         self._gate = PlaybackGate(cfg.min_gap_seconds)
         self._overlay.finished.connect(self._gate.release)
         self._waiting: dict[str, float] = {}  # event name -> when it first had to wait
