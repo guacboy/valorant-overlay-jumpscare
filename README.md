@@ -28,7 +28,6 @@ On macOS or Linux the activate script is at `.venv/bin/activate` instead. The la
 | Folder | Contents |
 | --- | --- |
 | `assets/jumpscares/` | Images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`) and videos (`.mp4`, `.webm`, `.mov`, `.mkv`, `.avi`) |
-| `assets/jumpscare_sounds/` | Fallback jumpscare sounds (`.wav`, `.ogg`, `.mp3`) |
 | `assets/cues/` | Audio cues played on their own timer |
 
 Every jumpscare fills the whole screen. Media whose shape differs from your monitor's is scaled up until there are no gaps, and the overflow is cropped evenly from the edges.
@@ -47,7 +46,7 @@ The app keeps everything loaded in the background between jumpscares. As soon as
 
 ### Sounds
 
-To give an image or video its own sound, put an audio file with the same name next to it, e.g. `scream.png` with `scream.mp3`. Images without a paired sound use a random file from `assets/jumpscare_sounds/` (if any). Videos without a paired sound only play their own sound track.
+A jumpscare only plays a sound when an audio file (`.wav`, `.ogg`, `.mp3`) with exactly the same name sits next to it in `assets/jumpscares/`, e.g. `scream.png` with `scream.mp3`. Without one, an image pops up silently and a video plays with just its own sound track.
 
 Dead silence at the start and end of every sound file (jumpscare sounds and cues) is trimmed automatically when it is loaded, so sounds hit right away. Anything quieter than `trim_silence_threshold` counts as silence. A video's own sound track is not trimmed.
 
@@ -84,11 +83,10 @@ Edit `config.json`. Any key you leave out falls back to its default, and unknown
 | Key | Default | Meaning |
 | --- | --- | --- |
 | `jumpscare_folder` | `assets/jumpscares` | Image folder (relative paths resolve from the config file's folder) |
-| `jumpscare_sound_folder` | `assets/jumpscare_sounds` | Fallback sound folder |
 | `cue_folder` | `assets/cues` | Audio cue folder |
 | `jumpscare_interval_seconds` | `{min: 180, max: 900}` | Random wait between jumpscares |
 | `jumpscare_duration_ms` | `1000` | How long a still image is on screen (GIFs and videos play in full instead) |
-| `jumpscare_audio_chance` | `1.0` | Probability a jumpscare plays a sound |
+| `jumpscare_audio_chance` | `1.0` | Probability a same-named sound plays with its jumpscare |
 | `jumpscare_volume` | `1.0` | Jumpscare volume (sounds and video sound tracks), 0 to 1 |
 | `cues_enabled` | `true` | Turn the cue timer on or off |
 | `cue_interval_seconds` | `{min: 60, max: 300}` | Random wait between cues |

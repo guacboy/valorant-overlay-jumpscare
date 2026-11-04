@@ -10,7 +10,6 @@ DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config.json"
 
 DEFAULTS: dict = {
     "jumpscare_folder": "assets/jumpscares",
-    "jumpscare_sound_folder": "assets/jumpscare_sounds",
     "cue_folder": "assets/cues",
     "jumpscare_interval_seconds": {"min": 180, "max": 900},
     "jumpscare_duration_ms": 1000,
@@ -50,7 +49,6 @@ class Hotkeys:
 @dataclass(frozen=True)
 class Config:
     jumpscare_folder: Path
-    jumpscare_sound_folder: Path
     cue_folder: Path
     jumpscare_interval: Interval
     jumpscare_duration_ms: int
@@ -125,7 +123,6 @@ def load_config(path: Path = DEFAULT_CONFIG_PATH) -> Config:
 
     return Config(
         jumpscare_folder=folder("jumpscare_folder"),
-        jumpscare_sound_folder=folder("jumpscare_sound_folder"),
         cue_folder=folder("cue_folder"),
         jumpscare_interval=_interval(raw["jumpscare_interval_seconds"], "jumpscare_interval_seconds"),
         jumpscare_duration_ms=_non_negative_int(raw, "jumpscare_duration_ms", allow_zero=False),

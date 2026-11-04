@@ -64,7 +64,7 @@ def test_random_delay_within_bounds():
 
 def pickers():
     rng = random.Random(0)
-    return RandomPicker(rng), RandomPicker(rng), rng
+    return RandomPicker(rng), rng
 
 
 def test_choose_none_without_images(tmp_path):
@@ -75,17 +75,16 @@ def test_choose_prefers_paired_sound(tmp_path):
     cfg = make_cfg(tmp_path)
     image = touch(cfg.jumpscare_folder / "face.png")
     paired = touch(cfg.jumpscare_folder / "face.wav")
-    touch(cfg.jumpscare_sound_folder / "other.wav")
     scare = choose_jumpscare(cfg, *pickers())
     assert scare.media == image
     assert scare.sound == paired
 
 
-def test_choose_falls_back_to_sound_folder(tmp_path):
+def test_image_without_same_named_sound_is_silent(tmp_path):
     cfg = make_cfg(tmp_path)
     touch(cfg.jumpscare_folder / "face.png")
-    fallback = touch(cfg.jumpscare_sound_folder / "other.ogg")
-    assert choose_jumpscare(cfg, *pickers()).sound == fallback
+    touch(cfg.jumpscare_folder / "other.ogg")  # a sound with a different name is not used
+    assert choose_jumpscare(cfg, *pickers()).sound is None
 
 
 def test_choose_silent_when_audio_chance_zero(tmp_path):
@@ -101,10 +100,9 @@ def test_videos_are_picked(tmp_path):
     assert choose_jumpscare(cfg, *pickers()).media == video
 
 
-def test_video_skips_fallback_sound_but_keeps_paired(tmp_path):
+def test_video_gets_only_same_named_sound(tmp_path):
     cfg = make_cfg(tmp_path)
     video = touch(cfg.jumpscare_folder / "clip.mp4")
-    touch(cfg.jumpscare_sound_folder / "other.wav")
     assert choose_jumpscare(cfg, *pickers()).sound is None
     paired = touch(video.with_suffix(".mp3"))
     assert choose_jumpscare(cfg, *pickers()).sound == paired

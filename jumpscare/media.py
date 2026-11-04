@@ -62,19 +62,15 @@ def random_delay_ms(interval: Interval, rng: random.Random) -> int:
 def choose_jumpscare(
     cfg: Config,
     media_picker: RandomPicker,
-    sound_picker: RandomPicker,
     rng: random.Random,
 ) -> Jumpscare | None:
-    """Pick an image or video plus an optional sound. Folders are rescanned so new files are used live.
+    """Pick an image or video, plus the sound with the same name if there is one.
 
-    Videos carry their own sound track, so they only get an extra sound when one is paired by name.
+    Media without a same-named sound plays silently (a video still has its own sound track).
+    Folders are rescanned on every call so new files are used live.
     """
     media = media_picker.pick(list_files(cfg.jumpscare_folder, IMAGE_EXTS + VIDEO_EXTS))
     if media is None:
         return None
-    sound = None
-    if rng.random() < cfg.jumpscare_audio_chance:
-        sound = paired_audio(media)
-        if sound is None and not is_video(media):
-            sound = sound_picker.pick(list_files(cfg.jumpscare_sound_folder, AUDIO_EXTS))
+    sound = paired_audio(media) if rng.random() < cfg.jumpscare_audio_chance else None
     return Jumpscare(media=media, sound=sound)

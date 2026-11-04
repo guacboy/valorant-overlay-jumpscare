@@ -1,6 +1,5 @@
 {
   "jumpscare_folder": "assets/jumpscares",
-  "jumpscare_sound_folder": "assets/jumpscare_sounds",
   "cue_folder": "assets/cues",
   "jumpscare_interval_seconds": { "min": 15, "max": 60 },
   "jumpscare_duration_ms": 1000,

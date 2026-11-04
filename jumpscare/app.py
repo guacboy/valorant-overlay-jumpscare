@@ -59,7 +59,6 @@ class OverlayApp(QObject):
         self._cfg = cfg
         self._rng = random.Random()
         self._media_picker = RandomPicker(self._rng)
-        self._scare_sound_picker = RandomPicker(self._rng)
         self._cue_picker = RandomPicker(self._rng)
         self._paused = False
 
@@ -169,7 +168,7 @@ class OverlayApp(QObject):
         """Load the next jumpscare and its sound during the quiet time before it plays."""
         self._next = None
         for _ in range(PREPARE_ATTEMPTS):
-            scare = choose_jumpscare(self._cfg, self._media_picker, self._scare_sound_picker, self._rng)
+            scare = choose_jumpscare(self._cfg, self._media_picker, self._rng)
             if scare is None:
                 return
             if self._overlay.prepare(scare.media):
