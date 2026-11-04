@@ -1,10 +1,30 @@
-"""Transparent, click-through, always-on-top window that flashes an image or plays a GIF."""
+"""Transparent, click-through, always-on-top window that flashes an image or plays a GIF or video."""
 
+import logging
 from pathlib import Path
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRect, QSize, Qt, QTimer
-from PySide6.QtGui import QGuiApplication, QImageReader, QMovie, QPixmap
+import numpy as np
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRect, QSize, Qt, QTimer, QUrl
+from PySide6.QtGui import QGuiApplication, QImage, QImageReader, QMovie, QPixmap
+from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer, QVideoFrame, QVideoSink
 from PySide6.QtWidgets import QLabel, QWidget
+
+from jumpscare.chroma import chroma_key, is_green_screen
+
+log = logging.getLogger(__name__)
+
+
+def qimage_to_rgba(image: QImage) -> np.ndarray:
+    image = image.convertToFormat(QImage.Format.Format_RGBA8888)
+    w, h, stride = image.width(), image.height(), image.bytesPerLine()
+    buf = np.frombuffer(image.constBits(), dtype=np.uint8, count=stride * h)
+    return buf.reshape(h, stride)[:, : w * 4].reshape(h, w, 4).copy()
+
+
+def rgba_to_qimage(rgba: np.ndarray) -> QImage:
+    h, w = rgba.shape[:2]
+    data = np.ascontiguousarray(rgba)
+    return QImage(data.data, w, h, w * 4, QImage.Format.Format_RGBA8888).copy()
 
 
 class JumpscareOverlay(QWidget):
@@ -25,6 +45,10 @@ class JumpscareOverlay(QWidget):
         self._scale = scale
         self._fade_ms = fade_ms
         self._movie: QMovie | None = None
+        self._player: QMediaPlayer | None = None
+        self._sink: QVideoSink | None = None
+        self._audio_out: QAudioOutput | None = None
+        self._key_video: bool | None = None  # decided from the first frame
 
         self._label = QLabel(self)
         self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -36,6 +60,11 @@ class JumpscareOverlay(QWidget):
         self._fade = QPropertyAnimation(self, b"windowOpacity", self)
         self._fade.setEasingCurve(QEasingCurve.Type.InQuad)
         self._fade.finished.connect(self._finish)
+
+    @property
+    def video_keyed(self) -> bool | None:
+        """Whether the current video is being chroma keyed (None before its first frame)."""
+        return self._key_video
 
     def _screen_geometry(self) -> QRect:
         screens = QGuiApplication.screens()
@@ -68,6 +97,28 @@ class JumpscareOverlay(QWidget):
         self._hide_timer.start(max(duration_ms - self._fade_ms, 0))
         return True
 
+    def show_video(self, path: Path, volume: float) -> bool:
+        """Play a video once through with its sound, keying out a green screen if one is detected.
+
+        Decoding is asynchronous, so a broken file is reported through the log, not the return value.
+        """
+        if not path.is_file():
+            return False
+        self._reset()
+        self._key_video = None
+        self._audio_out = QAudioOutput(self)
+        self._audio_out.setVolume(volume)
+        self._sink = QVideoSink(self)
+        self._sink.videoFrameChanged.connect(self._on_video_frame)
+        self._player = QMediaPlayer(self)
+        self._player.setAudioOutput(self._audio_out)
+        self._player.setVideoSink(self._sink)
+        self._player.mediaStatusChanged.connect(self._on_media_status)
+        self._player.errorOccurred.connect(self._on_video_error)
+        self._player.setSource(QUrl.fromLocalFile(str(path)))
+        self._player.play()
+        return True
+
     def _fit(self, size: QSize) -> QSize:
         """Size that fits inside the screen times scale, keeping aspect ratio."""
         geo = self._screen_geometry()
@@ -92,12 +143,50 @@ class JumpscareOverlay(QWidget):
         movie.setPaused(True)
         self._hide_timer.start(delay)
 
+    def _on_video_frame(self, frame: QVideoFrame) -> None:
+        if self._sink is None or self.sender() is not self._sink or not frame.isValid():
+            return
+        image = frame.toImage()
+        if image.isNull():
+            return
+        # Scale first so keying works on screen-sized pixels, not the full source resolution.
+        image = image.scaled(
+            self._fit(image.size()),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        if self._key_video is None:
+            self._key_video = is_green_screen(qimage_to_rgba(image))
+            self._present()
+        if self._key_video:
+            image = rgba_to_qimage(chroma_key(qimage_to_rgba(image)))
+        self._label.setPixmap(QPixmap.fromImage(image))
+
+    def _on_media_status(self, status: QMediaPlayer.MediaStatus) -> None:
+        if self.sender() is not self._player:
+            return
+        if status == QMediaPlayer.MediaStatus.EndOfMedia:
+            self._start_fade()  # last frame stays on screen during the fade
+        elif status == QMediaPlayer.MediaStatus.InvalidMedia:
+            self._finish()
+
+    def _on_video_error(self, _error: QMediaPlayer.Error, message: str) -> None:
+        if self.sender() is not self._player:
+            return
+        log.warning("Video failed: %s", message)
+        self._finish()
+
     def _reset(self) -> None:
         self._hide_timer.stop()
         self._fade.stop()
         if self._movie is not None:
             self._movie.stop()
             self._movie = None
+        if self._player is not None:
+            self._player.stop()
+            for obj in (self._player, self._sink, self._audio_out):
+                obj.deleteLater()
+            self._player = self._sink = self._audio_out = None
         self._label.clear()
 
     def _present(self) -> None:

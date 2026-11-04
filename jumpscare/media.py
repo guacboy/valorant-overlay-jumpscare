@@ -8,6 +8,7 @@ from typing import Sequence, TypeVar
 from jumpscare.config import Config, Interval
 
 IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".webp", ".gif")
+VIDEO_EXTS = (".mp4", ".webm", ".mov", ".mkv", ".avi")
 AUDIO_EXTS = (".wav", ".ogg", ".mp3")
 
 T = TypeVar("T")
@@ -15,8 +16,12 @@ T = TypeVar("T")
 
 @dataclass(frozen=True)
 class Jumpscare:
-    image: Path
+    media: Path
     sound: Path | None
+
+
+def is_video(path: Path) -> bool:
+    return path.suffix.lower() in VIDEO_EXTS
 
 
 def list_files(folder: Path, exts: Sequence[str]) -> list[Path]:
@@ -56,17 +61,20 @@ def random_delay_ms(interval: Interval, rng: random.Random) -> int:
 
 def choose_jumpscare(
     cfg: Config,
-    image_picker: RandomPicker,
+    media_picker: RandomPicker,
     sound_picker: RandomPicker,
     rng: random.Random,
 ) -> Jumpscare | None:
-    """Pick an image plus an optional sound. Folders are rescanned so new files are used live."""
-    image = image_picker.pick(list_files(cfg.jumpscare_folder, IMAGE_EXTS))
-    if image is None:
+    """Pick an image or video plus an optional sound. Folders are rescanned so new files are used live.
+
+    Videos carry their own sound track, so they only get an extra sound when one is paired by name.
+    """
+    media = media_picker.pick(list_files(cfg.jumpscare_folder, IMAGE_EXTS + VIDEO_EXTS))
+    if media is None:
         return None
     sound = None
     if rng.random() < cfg.jumpscare_audio_chance:
-        sound = paired_audio(image) or sound_picker.pick(
-            list_files(cfg.jumpscare_sound_folder, AUDIO_EXTS)
-        )
-    return Jumpscare(image=image, sound=sound)
+        sound = paired_audio(media)
+        if sound is None and not is_video(media):
+            sound = sound_picker.pick(list_files(cfg.jumpscare_sound_folder, AUDIO_EXTS))
+    return Jumpscare(media=media, sound=sound)

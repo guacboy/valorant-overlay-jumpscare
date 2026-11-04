@@ -21,6 +21,7 @@ DEFAULTS: dict = {
     "cues_enabled": True,
     "cue_interval_seconds": {"min": 60, "max": 300},
     "cue_volume": 0.8,
+    "trim_silence_threshold": 0.01,
     "monitor": 0,
     "hotkeys": {
         "test_jumpscare": "ctrl+alt+j",
@@ -61,6 +62,7 @@ class Config:
     cues_enabled: bool
     cue_interval: Interval
     cue_volume: float
+    trim_silence_threshold: float
     monitor: int
     hotkeys: Hotkeys
 
@@ -134,6 +136,7 @@ def load_config(path: Path = DEFAULT_CONFIG_PATH) -> Config:
         cues_enabled=bool(raw["cues_enabled"]),
         cue_interval=_interval(raw["cue_interval_seconds"], "cue_interval_seconds"),
         cue_volume=_fraction(raw, "cue_volume"),
+        trim_silence_threshold=_fraction(raw, "trim_silence_threshold"),
         monitor=_non_negative_int(raw, "monitor"),
         hotkeys=Hotkeys(**{k: str(v).strip() for k, v in raw["hotkeys"].items()}),
     )

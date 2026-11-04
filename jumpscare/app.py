@@ -10,7 +10,14 @@ from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from jumpscare.audio import AudioPlayer
 from jumpscare.config import Config
-from jumpscare.media import AUDIO_EXTS, RandomPicker, choose_jumpscare, list_files, random_delay_ms
+from jumpscare.media import (
+    AUDIO_EXTS,
+    RandomPicker,
+    choose_jumpscare,
+    is_video,
+    list_files,
+    random_delay_ms,
+)
 from jumpscare.overlay import JumpscareOverlay
 
 log = logging.getLogger(__name__)
@@ -46,12 +53,12 @@ class OverlayApp(QObject):
         self._qt_app = qt_app
         self._cfg = cfg
         self._rng = random.Random()
-        self._image_picker = RandomPicker(self._rng)
+        self._media_picker = RandomPicker(self._rng)
         self._scare_sound_picker = RandomPicker(self._rng)
         self._cue_picker = RandomPicker(self._rng)
         self._paused = False
 
-        self._audio = AudioPlayer()
+        self._audio = AudioPlayer(cfg.trim_silence_threshold)
         self._overlay = JumpscareOverlay(cfg.monitor, cfg.jumpscare_scale, cfg.jumpscare_fade_ms)
 
         self._scare_timer = _single_shot_timer(self, self._on_scare_timer)
@@ -124,14 +131,18 @@ class OverlayApp(QObject):
         self._schedule_cue()
 
     def trigger_jumpscare(self) -> None:
-        scare = choose_jumpscare(self._cfg, self._image_picker, self._scare_sound_picker, self._rng)
+        scare = choose_jumpscare(self._cfg, self._media_picker, self._scare_sound_picker, self._rng)
         if scare is None:
-            log.warning("No images found in %s", self._cfg.jumpscare_folder)
+            log.warning("No images or videos found in %s", self._cfg.jumpscare_folder)
             return
-        if not self._overlay.show_image(scare.image, self._cfg.jumpscare_duration_ms):
-            log.warning("Could not load image %s", scare.image.name)
+        if is_video(scare.media):
+            shown = self._overlay.show_video(scare.media, self._cfg.jumpscare_volume)
+        else:
+            shown = self._overlay.show_image(scare.media, self._cfg.jumpscare_duration_ms)
+        if not shown:
+            log.warning("Could not load %s", scare.media.name)
             return
-        log.info("Jumpscare: %s", scare.image.name)
+        log.info("Jumpscare: %s", scare.media.name)
         if scare.sound:
             self._audio.play(scare.sound, self._cfg.jumpscare_volume)
 

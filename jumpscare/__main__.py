@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import os
 import signal
 import sys
 from pathlib import Path
@@ -33,6 +34,8 @@ def main() -> int:
         logging.error("Config error: %s", exc)
         return 1
 
+    # Hide FFmpeg's per-file stream dump that QtMultimedia prints when a video opens.
+    os.environ.setdefault("QT_LOGGING_RULES", "qt.multimedia.ffmpeg*=false")
     qt_app = QApplication(sys.argv)
     qt_app.setQuitOnLastWindowClosed(False)  # the overlay hides itself; that must not exit the app
 

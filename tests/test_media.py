@@ -77,7 +77,7 @@ def test_choose_prefers_paired_sound(tmp_path):
     paired = touch(cfg.jumpscare_folder / "face.wav")
     touch(cfg.jumpscare_sound_folder / "other.wav")
     scare = choose_jumpscare(cfg, *pickers())
-    assert scare.image == image
+    assert scare.media == image
     assert scare.sound == paired
 
 
@@ -93,3 +93,18 @@ def test_choose_silent_when_audio_chance_zero(tmp_path):
     touch(cfg.jumpscare_folder / "face.png")
     touch(cfg.jumpscare_folder / "face.wav")
     assert choose_jumpscare(cfg, *pickers()).sound is None
+
+
+def test_videos_are_picked(tmp_path):
+    cfg = make_cfg(tmp_path)
+    video = touch(cfg.jumpscare_folder / "clip.mp4")
+    assert choose_jumpscare(cfg, *pickers()).media == video
+
+
+def test_video_skips_fallback_sound_but_keeps_paired(tmp_path):
+    cfg = make_cfg(tmp_path)
+    video = touch(cfg.jumpscare_folder / "clip.mp4")
+    touch(cfg.jumpscare_sound_folder / "other.wav")
+    assert choose_jumpscare(cfg, *pickers()).sound is None
+    paired = touch(video.with_suffix(".mp3"))
+    assert choose_jumpscare(cfg, *pickers()).sound == paired

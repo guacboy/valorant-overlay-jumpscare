@@ -3,6 +3,7 @@ from PySide6.QtGui import QColor, QPixmap
 from PySide6.QtTest import QTest
 
 from jumpscare.overlay import JumpscareOverlay
+from tests.avi import green_screen_frames, write_avi
 
 
 def make_png(path, w=100, h=50):
@@ -74,3 +75,43 @@ def test_shows_scaled_image_then_hides(qt_app, tmp_path):
 
     QTest.qWait(400)
     assert not overlay.isVisible()
+
+
+def play_until_hidden(overlay, path, timeout_ms=4000):
+    """Play a video and return a snapshot of the first frame shown."""
+    assert overlay.show_video(path, 0.0) is True
+    snapshot, waited = None, 0
+    while waited < timeout_ms:
+        QTest.qWait(50)
+        waited += 50
+        if snapshot is None and overlay._label.pixmap() is not None and not overlay._label.pixmap().isNull():
+            snapshot = overlay._label.pixmap().toImage()
+        if snapshot is not None and not overlay.isVisible():
+            return snapshot
+    raise AssertionError("video did not finish and hide")
+
+
+def test_green_screen_video_is_keyed(qt_app, tmp_path):
+    video = write_avi(tmp_path / "green.avi", green_screen_frames(5))
+    overlay = JumpscareOverlay(monitor=0, scale=0.5, fade_ms=0)
+    snapshot = play_until_hidden(overlay, video)
+    assert overlay.video_keyed is True
+    assert snapshot.pixelColor(1, 1).alpha() == 0
+    center = snapshot.pixelColor(snapshot.width() // 2, snapshot.height() // 2)
+    assert center.alpha() == 255 and center.red() > 150
+
+
+def test_normal_video_is_not_keyed(qt_app, tmp_path):
+    frames = green_screen_frames(5)
+    for f in frames:
+        f[:] = (90, 80, 70)
+    video = write_avi(tmp_path / "plain.avi", frames)
+    overlay = JumpscareOverlay(monitor=0, scale=0.5, fade_ms=0)
+    snapshot = play_until_hidden(overlay, video)
+    assert overlay.video_keyed is False
+    assert snapshot.pixelColor(1, 1).alpha() == 255
+
+
+def test_missing_video_rejected(qt_app, tmp_path):
+    overlay = JumpscareOverlay(monitor=0, scale=0.5, fade_ms=0)
+    assert overlay.show_video(tmp_path / "nope.mp4", 0.0) is False
