@@ -14,9 +14,9 @@ from jumpscare.config import Config
 from jumpscare.gate import PlaybackGate
 from jumpscare.media import (
     AUDIO_EXTS,
+    Jumpscare,
     RandomPicker,
     choose_jumpscare,
-    is_video,
     list_files,
     random_delay_ms,
 )
@@ -25,6 +25,7 @@ from jumpscare.overlay import JumpscareOverlay
 log = logging.getLogger(__name__)
 
 GATE_POLL_MS = 250
+PREPARE_ATTEMPTS = 3  # files to try before giving up when some fail to load
 
 
 def _tray_icon() -> QIcon:
@@ -63,9 +64,11 @@ class OverlayApp(QObject):
         self._paused = False
 
         self._audio = AudioPlayer(cfg.trim_silence_threshold)
-        self._overlay = JumpscareOverlay(cfg.monitor, cfg.jumpscare_scale)
+        self._overlay = JumpscareOverlay(cfg.monitor, cfg.jumpscare_duration_ms, cfg.jumpscare_volume)
         self._gate = PlaybackGate(cfg.min_gap_seconds)
+        self._next: Jumpscare | None = None  # preloaded so it shows the instant it triggers
         self._overlay.finished.connect(self._gate.release)
+        self._overlay.finished.connect(self._prepare_next)
         self._waiting: dict[str, float] = {}  # event name -> when it first had to wait
 
         self._scare_timer = _single_shot_timer(self, self._on_scare_timer)
@@ -110,6 +113,7 @@ class OverlayApp(QObject):
     def start(self) -> None:
         self._tray.show()
         self._register_hotkeys()
+        self._prepare_next()
         self._schedule()
         log.info("Overlay running. Jumpscares from %s", self._cfg.jumpscare_folder)
 
@@ -161,17 +165,33 @@ class OverlayApp(QObject):
         self.trigger_cue()
         self._schedule_cue()
 
-    def trigger_jumpscare(self) -> None:
-        scare = choose_jumpscare(self._cfg, self._media_picker, self._scare_sound_picker, self._rng)
-        if scare is None:
-            log.warning("No images or videos found in %s", self._cfg.jumpscare_folder)
-            return
-        if is_video(scare.media):
-            shown = self._overlay.show_video(scare.media, self._cfg.jumpscare_volume)
-        else:
-            shown = self._overlay.show_image(scare.media, self._cfg.jumpscare_duration_ms)
-        if not shown:
+    def _prepare_next(self) -> None:
+        """Load the next jumpscare and its sound during the quiet time before it plays."""
+        self._next = None
+        for _ in range(PREPARE_ATTEMPTS):
+            scare = choose_jumpscare(self._cfg, self._media_picker, self._scare_sound_picker, self._rng)
+            if scare is None:
+                return
+            if self._overlay.prepare(scare.media):
+                if scare.sound:
+                    self._audio.preload(scare.sound)
+                self._next = scare
+                return
             log.warning("Could not load %s", scare.media.name)
+
+    def trigger_jumpscare(self) -> None:
+        scare = self._next
+        # Re-prepare if the preloaded file was deleted or failed to load in the background.
+        if scare is None or self._overlay.prepared_path != scare.media or not scare.media.exists():
+            self._prepare_next()
+            scare = self._next
+        if scare is None:
+            log.warning("No usable images or videos found in %s", self._cfg.jumpscare_folder)
+            return
+        self._next = None
+        if not self._overlay.play():
+            log.warning("Could not play %s", scare.media.name)
+            self._prepare_next()
             return
         log.info("Jumpscare: %s", scare.media.name)
         sound_s = self._audio.play(scare.sound, self._cfg.jumpscare_volume) if scare.sound else 0.0

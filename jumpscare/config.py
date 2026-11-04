@@ -14,7 +14,6 @@ DEFAULTS: dict = {
     "cue_folder": "assets/cues",
     "jumpscare_interval_seconds": {"min": 180, "max": 900},
     "jumpscare_duration_ms": 1000,
-    "jumpscare_scale": 0.9,
     "jumpscare_audio_chance": 1.0,
     "jumpscare_volume": 1.0,
     "cues_enabled": True,
@@ -55,7 +54,6 @@ class Config:
     cue_folder: Path
     jumpscare_interval: Interval
     jumpscare_duration_ms: int
-    jumpscare_scale: float
     jumpscare_audio_chance: float
     jumpscare_volume: float
     cues_enabled: bool
@@ -88,10 +86,9 @@ def _interval(raw: dict, name: str) -> Interval:
     return Interval(low, high)
 
 
-def _fraction(raw: dict, name: str, allow_zero: bool = True) -> float:
+def _fraction(raw: dict, name: str) -> float:
     value = float(raw[name])
-    low_ok = value >= 0 if allow_zero else value > 0
-    if not low_ok or value > 1:
+    if not 0 <= value <= 1:
         raise ConfigError(f"{name} must be between 0 and 1 (got {value})")
     return value
 
@@ -132,7 +129,6 @@ def load_config(path: Path = DEFAULT_CONFIG_PATH) -> Config:
         cue_folder=folder("cue_folder"),
         jumpscare_interval=_interval(raw["jumpscare_interval_seconds"], "jumpscare_interval_seconds"),
         jumpscare_duration_ms=_non_negative_int(raw, "jumpscare_duration_ms", allow_zero=False),
-        jumpscare_scale=_fraction(raw, "jumpscare_scale", allow_zero=False),
         jumpscare_audio_chance=_fraction(raw, "jumpscare_audio_chance"),
         jumpscare_volume=_fraction(raw, "jumpscare_volume"),
         cues_enabled=bool(raw["cues_enabled"]),

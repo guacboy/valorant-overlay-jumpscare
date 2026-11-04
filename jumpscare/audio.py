@@ -52,6 +52,15 @@ class AudioPlayer:
             self._cache[key] = sound
         return self._cache[key]
 
+    def preload(self, path: Path) -> None:
+        """Decode and trim the sound now so play() starts without delay."""
+        if not self.available:
+            return
+        try:
+            self._load(path)
+        except (pygame.error, OSError) as exc:
+            log.warning("Could not load %s: %s", path.name, exc)
+
     def play(self, path: Path, volume: float) -> float:
         """Play the sound and return its length in seconds (0 if it could not be played)."""
         if not self.available:

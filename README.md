@@ -31,11 +31,17 @@ On macOS or Linux the activate script is at `.venv/bin/activate` instead. The la
 | `assets/jumpscare_sounds/` | Fallback jumpscare sounds (`.wav`, `.ogg`, `.mp3`) |
 | `assets/cues/` | Audio cues played on their own timer |
 
+Every jumpscare fills the whole screen. Media whose shape differs from your monitor's is scaled up until there are no gaps, and the overflow is cropped evenly from the edges.
+
 Still images pop up for `jumpscare_duration_ms` (1 second by default) and then vanish instantly, with no fade. Animated GIFs and videos ignore that setting: each one plays through once for its full length, then vanishes. GIFs that are set to loop still play only once. Videos play with their own sound track at `jumpscare_volume`.
 
 ### Green screen videos
 
-Green screen videos are keyed automatically. When a video starts, the overlay checks the edges of its first frame. If they are mostly bright green, the green is removed from every frame (with soft edges and green spill cleanup) so only the subject appears over your game. Videos without a green border play unchanged, so green objects in normal footage are left alone.
+Green screen videos are keyed automatically. When a video is loaded, the overlay checks the edges of its first frame. If they are mostly bright green, the green is removed from every frame (with soft edges and green spill cleanup) so only the subject appears over your game. Videos without a green border play unchanged, so green objects in normal footage are left alone. To keep playback smooth, keyed frames are processed at up to 1280 pixels wide and then scaled to your screen, which softens the cut-out edges slightly.
+
+### Instant playback
+
+The app keeps everything loaded in the background between jumpscares. As soon as one finishes, the next one is picked and loaded during the quiet time, including its sound and, for videos, its first frame and the green screen check. A single video player is created at startup and reused, so when the timer fires the jumpscare appears immediately instead of waiting for a player to start.
 
 ### Sounds
 
@@ -80,7 +86,6 @@ Edit `config.json`. Any key you leave out falls back to its default, and unknown
 | `cue_folder` | `assets/cues` | Audio cue folder |
 | `jumpscare_interval_seconds` | `{min: 180, max: 900}` | Random wait between jumpscares |
 | `jumpscare_duration_ms` | `1000` | How long a still image is on screen (GIFs and videos play in full instead) |
-| `jumpscare_scale` | `0.9` | Max image size as a fraction of the screen |
 | `jumpscare_audio_chance` | `1.0` | Probability a jumpscare plays a sound |
 | `jumpscare_volume` | `1.0` | Jumpscare volume (sounds and video sound tracks), 0 to 1 |
 | `cues_enabled` | `true` | Turn the cue timer on or off |
