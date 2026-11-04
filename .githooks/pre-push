@@ -1,0 +1,12 @@
+#!/bin/sh
+# Pre-push gate: block the push if the test suite fails.
+PY=".venv/Scripts/python.exe"
+[ -x "$PY" ] || PY=".venv/bin/python"
+if [ ! -x "$PY" ]; then
+  echo "pre-push: .venv not found, create it first (see README)" >&2
+  exit 1
+fi
+QT_QPA_PLATFORM=offscreen "$PY" -m pytest -q || {
+  echo "pre-push: tests failed, push aborted" >&2
+  exit 1
+}

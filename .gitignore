@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+overlay.log
+
+# Personal media stays local; folders are kept with .gitkeep
+assets/*/*
+!assets/*/.gitkeep

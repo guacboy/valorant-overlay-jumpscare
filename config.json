@@ -1,0 +1,20 @@
+{
+  "jumpscare_folder": "assets/jumpscares",
+  "jumpscare_sound_folder": "assets/jumpscare_sounds",
+  "cue_folder": "assets/cues",
+  "jumpscare_interval_seconds": { "min": 180, "max": 900 },
+  "jumpscare_duration_ms": 1200,
+  "jumpscare_fade_ms": 250,
+  "jumpscare_scale": 0.9,
+  "jumpscare_audio_chance": 1.0,
+  "jumpscare_volume": 1.0,
+  "cues_enabled": true,
+  "cue_interval_seconds": { "min": 60, "max": 300 },
+  "cue_volume": 0.8,
+  "monitor": 0,
+  "hotkeys": {
+    "test_jumpscare": "ctrl+alt+j",
+    "test_cue": "ctrl+alt+k",
+    "toggle_pause": "ctrl+alt+p"
+  }
+}
