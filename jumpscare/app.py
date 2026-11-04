@@ -222,6 +222,7 @@ class OverlayApp(QObject):
 
     def quit(self) -> None:
         keyboard.unhook_all_hotkeys()
+        self._overlay.shutdown()
         self._audio.shutdown()
         self._tray.hide()
         self._qt_app.quit()

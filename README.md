@@ -37,7 +37,9 @@ Still images pop up for `jumpscare_duration_ms` (1 second by default) and then v
 
 ### Green screen videos
 
-Green screen videos are keyed automatically. When a video is loaded, the overlay checks the edges of its first frame. If they are mostly bright green, the green is removed from every frame (with soft edges and green spill cleanup) so only the subject appears over your game. Videos without a green border play unchanged, so green objects in normal footage are left alone. To keep playback smooth, keyed frames are processed at up to 1280 pixels wide and then scaled to your screen, which softens the cut-out edges slightly.
+Green screen videos are keyed automatically. When a video is loaded, the overlay checks the edges of its first frame. If they are mostly bright green, the green is removed from every frame (with soft edges and green spill cleanup) so only the subject appears over your game. Videos without a green border play unchanged, so green objects in normal footage are left alone. To keep 60 fps video smooth, keyed frames are processed at up to 960 pixels wide and then scaled to your screen, which softens the cut-out edges slightly.
+
+Video frames are converted and keyed on a background thread, so the overlay never falls behind the video's sound. If your PC is busy (for example mid-match), the overlay skips a frame instead of slowing the video down.
 
 ### Instant playback
 

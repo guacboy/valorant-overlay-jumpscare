@@ -49,7 +49,7 @@ def play_video_until_hidden(ov, path, timeout_ms=4000):
     wait_for_preview(ov)
     assert ov.play() is True
     assert ov.isVisible(), "preloaded video should appear instantly"
-    snapshot = ov._label.pixmap().toImage()
+    snapshot = ov.current_frame()
     waited = 0
     while ov.isVisible() and waited < timeout_ms:
         QTest.qWait(50)
@@ -84,7 +84,7 @@ def test_image_fills_whole_screen(qt_app, tmp_path):
     assert ov.prepare(make_png(tmp_path / "wide.png", 300, 100)) is True  # different shape than screen
     assert ov.play() is True
     assert ov.geometry() == qt_app.primaryScreen().geometry()
-    assert ov._label.pixmap().size() == screen_size(qt_app)
+    assert ov.current_frame().size() == screen_size(qt_app)
     QTest.qWait(300)
     assert not ov.isVisible()
 
@@ -107,7 +107,7 @@ def test_gif_plays_fully_once_then_hides(qt_app, tmp_path):
     ov.play()
     QTest.qWait(200)
     assert ov.isVisible(), "GIF was cut off before finishing"
-    assert ov._label.pixmap().size() == screen_size(qt_app)
+    assert ov.current_frame().size() == screen_size(qt_app)
     QTest.qWait(700)
     assert not ov.isVisible(), "GIF kept looping instead of closing"
 
@@ -162,3 +162,38 @@ def test_same_video_can_replay(qt_app, tmp_path):
 
 def test_missing_video_rejected(qt_app, tmp_path):
     assert overlay().prepare(tmp_path / "nope.mp4") is False
+
+
+def test_render_sizes(qt_app):
+    from PySide6.QtCore import QSize
+    from PySide6.QtGui import QImage
+
+    from jumpscare.overlay import KEY_MAX_WIDTH, render_video_frame
+
+    frame = QImage(1920, 1080, QImage.Format.Format_RGB32)
+    frame.fill(QColor(0, 200, 0))
+    screen = QSize(2560, 1440)
+    assert render_video_frame(frame, screen, key=False).size() == screen
+    keyed = render_video_frame(frame, screen, key=True)
+    assert keyed.width() == KEY_MAX_WIDTH
+    assert abs(keyed.width() / keyed.height() - screen.width() / screen.height()) < 0.01
+
+
+def test_renderer_skips_to_newest_frame(qt_app):
+    from PySide6.QtCore import QSize, QThreadPool
+    from PySide6.QtGui import QImage
+    from PySide6.QtMultimedia import QVideoFrame
+
+    from jumpscare.overlay import FrameRenderer
+
+    renderer = FrameRenderer()
+    got = []
+    renderer.rendered.connect(lambda generation, image: got.append(generation))
+    image = QImage(1920, 1080, QImage.Format.Format_RGB32)
+    image.fill(QColor(0, 200, 0))
+    for generation in range(20):  # far faster than frames can be keyed
+        renderer.submit(generation, QVideoFrame(image), QSize(1920, 1080), True)
+    QThreadPool.globalInstance().waitForDone(5000)
+    QTest.qWait(50)  # deliver queued signals
+    assert got[-1] == 19, "newest frame must always be rendered"
+    assert len(got) < 20, "frames that piled up should have been skipped"
