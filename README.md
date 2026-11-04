@@ -12,14 +12,16 @@ It is a normal always-on-top desktop window. It does not read game memory, injec
 
 ## Setup
 
-```powershell
+Commands below are for a bash terminal (Git Bash on Windows).
+
+```bash
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+source .venv/Scripts/activate
 pip install -r requirements-dev.txt
 git config core.hooksPath .githooks
 ```
 
-The last line enables the pre-push hook, which runs the test suite and blocks the push if it fails.
+On macOS or Linux the activate script is at `.venv/bin/activate` instead. The last line enables the pre-push hook, which runs the test suite and blocks the push if it fails.
 
 ## Adding media
 
@@ -45,11 +47,13 @@ Folders are rescanned on every trigger, so you can add files while the overlay i
 
 ## Running
 
-```powershell
-.\.venv\Scripts\python.exe -m jumpscare
+With the venv activated:
+
+```bash
+python -m jumpscare
 ```
 
-To run without a console window, use `pythonw` instead of `python`. Logs go to `overlay.log` either way.
+To keep it running without tying up the terminal, start it with `pythonw -m jumpscare &` instead. Logs go to `overlay.log` either way.
 
 A red dot appears in the system tray. Right-click it to test a jumpscare, test a cue, pause, or quit.
 
@@ -83,12 +87,12 @@ Edit `config.json`. Any key you leave out falls back to its default, and unknown
 | `monitor` | `0` | Screen index to show jumpscares on (falls back to primary) |
 | `hotkeys` | see above | Key combos in `keyboard` library syntax; an empty string disables one |
 
-Use `--config path\to\other.json` to load a different file.
+Use `--config path/to/other.json` to load a different file.
 
 ## Tests
 
-```powershell
-.\.venv\Scripts\python.exe -m pytest
+```bash
+python -m pytest
 ```
 
 ## Project layout
